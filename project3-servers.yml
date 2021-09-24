@@ -145,3 +145,11 @@ Resources:
       VpcId: 
         Fn::ImportValue:
           Fn::Sub: "${EnvironmentName}-VPCID"
+
+Outputs: 
+
+  UdagramUrl: 
+    Description: Url to access Udagram
+    Value: !Join [ "", [ "http://", !GetAtt WebAppLB.DNSName ] ]
+    Export:
+      Name: !Sub ${EnvironmentName}-Udagram-Url
