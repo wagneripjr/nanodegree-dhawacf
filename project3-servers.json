@@ -2,5 +2,9 @@
 	{
 		"ParameterKey": "EnvironmentName",
 		"ParameterValue": "UdacityProject3"
+	},
+	{
+		"ParameterKey": "JumpboxInbound",
+		"ParameterValue": "177.3.198.239/32"
 	}
 ]

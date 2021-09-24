@@ -1,3 +1,7 @@
+Description: >
+    Wagner Ignacio Pinto Junior / Udacity 2021
+    Infra, vpc and subnets
+
 Parameters:
 
     EnvironmentName:
