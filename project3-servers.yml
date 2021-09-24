@@ -45,6 +45,7 @@ Resources:
         FromPort: 0
         ToPort: 65535
         CidrIp: 0.0.0.0/0
+
   WebServerSecGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -66,12 +67,14 @@ Resources:
         FromPort: 0
         ToPort: 65535
         CidrIp: 0.0.0.0/0
+
   WebAppLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       UserData:
         Fn::Base64: |
           #!/bin/bash
+          date
           apt-get update -y
           apt-get install unzip awscli -y
           apt-get install apache2 -y
@@ -79,9 +82,10 @@ Resources:
           cd /var/www/html
           aws s3 cp s3://udacity-demo-1/udacity.zip .
           unzip -o udacity.zip
+          date
       IamInstanceProfile: !Ref Ec2ReadS3RoleInstanceProfile
       ImageId: ami-0747bdcabd34c712a
-      KeyName: that-one
+      KeyName: jumpbox
       SecurityGroups:
       - Ref: WebServerSecGroup
       InstanceType: t3.medium
@@ -89,18 +93,7 @@ Resources:
       - DeviceName: "/dev/sdk"
         Ebs:
           VolumeSize: '10'
-  WebAppGroup:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-      VPCZoneIdentifier:
-      - Fn::ImportValue: 
-          !Sub "${EnvironmentName}-PUB-NETS"
-      LaunchConfigurationName:
-        Ref: WebAppLaunchConfig
-      MinSize: '1'
-      MaxSize: '1'
-      TargetGroupARNs:
-      - Ref: WebAppTargetGroup
+
   WebAppLB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -109,6 +102,7 @@ Resources:
       - Fn::ImportValue: !Sub "${EnvironmentName}-PUB2-SN"
       SecurityGroups:
       - Ref: LBSecGroup
+
   Listener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -120,17 +114,20 @@ Resources:
         Ref: WebAppLB
       Port: '80'
       Protocol: HTTP
+
   ALBListenerRule:
       Type: AWS::ElasticLoadBalancingV2::ListenerRule
       Properties:
         Actions:
         - Type: forward
-          TargetGroupArn: !Ref 'WebAppTargetGroup'
+          TargetGroupArn: 
+            !Ref WebAppTargetGroup
         Conditions:
         - Field: path-pattern
           Values: [/]
         ListenerArn: !Ref 'Listener'
         Priority: 1
+
   WebAppTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
@@ -145,6 +142,23 @@ Resources:
       VpcId: 
         Fn::ImportValue:
           Fn::Sub: "${EnvironmentName}-VPCID"
+
+  WebAppGroup:
+    DependsOn: WebAppLB
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+      - Fn::ImportValue: 
+          !Sub "${EnvironmentName}-PRIV-NETS"
+      LaunchConfigurationName:
+        Ref: WebAppLaunchConfig
+      HealthCheckType: ELB
+      HealthCheckGracePeriod: 90
+      MinSize: '4'
+      MaxSize: '4'
+      TargetGroupARNs:
+      - Ref: WebAppTargetGroup
+
 
 Outputs: 
 
