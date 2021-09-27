@@ -22,16 +22,13 @@ Cloudformation template for servers (IAMRole, LoadBalancer, Autoscaling group, j
 
 ## project3-servers.json
 EnvironmentName for project3-servers.yml, should be the same environmentName than project3-infra.json
-JumpboxKeypair keypair to ssh to jumpbox
-InstancesKeypair keypar to ssh to autoscaling instances 
 
-Add the keypáirs to ssh-agent to let you ssh client respond to keypair chalenges
-
-## Running:
+## Running example:
 - ./create.sh project3-infra project3-infra.yml project3-infra.json 
 - ./create.sh project3-servers project3-servers.yml project3-servers.json 
 
-project3-servers.yml generate two outputs 
+## Project3-servers.yml generate two outputs 
 * UdagramUrl
 with the application URL 
-* JumpboxSSH with ssh command line to acces the Jumpbox
+* SessionManagerUrl 
+with url to connect to your instances via Session Manager

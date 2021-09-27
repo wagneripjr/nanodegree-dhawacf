@@ -1,24 +1,12 @@
 Description: >
     Wagner Ignacio Pinto Junior / Udacity 2021
-    Servers app and jumpbox
+    Servers and Session Manager Configuration for jumpboxless access to instances on priv subnets 
 
 Parameters:
 
   EnvironmentName:
     Description: An environment name that will be prefixed to resource names
     Type: String
-
-  JumpboxInbound:
-    Description: Address that can connect to jumpbox
-    Type: String
-
-  JumpboxKeypair:
-    Description: Keypair to access jumpbox
-    Type: AWS::EC2::KeyPair::KeyName
-
-  InstancesKeypair:
-    Description: Keypair to access instances (different from jumpbox)
-    Type: AWS::EC2::KeyPair::KeyName
 
 Resources:
 
@@ -31,7 +19,9 @@ Resources:
       MaxSessionDuration: 3600
       ManagedPolicyArns: 
       - "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
-      Description: "Allows EC2 instances to read S3 services on your behalf."
+      - "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+      - "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+      Description: "Allows EC2 instances to read S3 services on your behalf and be managed by SSM"
 
   Ec2ReadS3RoleInstanceProfile:
       Type: 'AWS::IAM::InstanceProfile'
@@ -96,7 +86,6 @@ Resources:
           unzip -o udacity.zip
       IamInstanceProfile: !Ref Ec2ReadS3RoleInstanceProfile
       ImageId: ami-0747bdcabd34c712a
-      KeyName: !Ref InstancesKeypair
       SecurityGroups:
       - Ref: WebServerSecGroup
       InstanceType: t3.medium
@@ -164,56 +153,11 @@ Resources:
       LaunchConfigurationName:
         Ref: WebAppLaunchConfig
       HealthCheckType: ELB
-      HealthCheckGracePeriod: 90
+      HealthCheckGracePeriod: 300
       MinSize: '4'
       MaxSize: '4'
       TargetGroupARNs:
       - Ref: WebAppTargetGroup
-
-
-  JumpboxSecGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Allow SSH into Jumpbox
-      VpcId:
-        Fn::ImportValue:
-          !Sub "${EnvironmentName}-VPCID"
-      SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: 22
-        ToPort: 22
-        CidrIp: !Ref JumpboxInbound
-      SecurityGroupEgress:
-      - IpProtocol: tcp
-        FromPort: 0
-        ToPort: 65535
-        CidrIp: 0.0.0.0/0
-
-  Jumpbox:
-    Type: "AWS::EC2::Instance"
-    Properties:
-      UserData:
-        Fn::Base64: |
-          #!/bin/bash
-          apt-get update -y
-          apt-get install unzip awscli -y    
-      #ImageId: "ami-087c17d1fe0178315"
-      ImageId: ami-0747bdcabd34c712a
-      InstanceType: "t3.micro"
-      KeyName: !Ref JumpboxKeypair
-      SubnetId: 
-        Fn::ImportValue: 
-          !Sub "${EnvironmentName}-PUB1-SN"
-      SecurityGroupIds: 
-      - !Ref JumpboxSecGroup
-      SourceDestCheck: true
-      BlockDeviceMappings: 
-      - 
-        DeviceName: "/dev/xvda"
-        Ebs: 
-          VolumeSize: 8
-          DeleteOnTermination: true
-
 
 Outputs: 
 
@@ -222,10 +166,9 @@ Outputs:
     Value: !Join [ "", [ "http://", !GetAtt WebAppLB.DNSName ] ]
     Export:
       Name: !Sub ${EnvironmentName}-Udagram-Url
-
-  JumpboxSSH: 
-    Description: ssh to jumpbox
-    Value: !Join [ "", [ "ssh -A ubuntu@", !GetAtt Jumpbox.PublicDnsName ] ]
-    Export:
-      Name: !Sub ${EnvironmentName}-Jumpbox-SSH   
       
+  SessionManagerUrl: 
+    Description: Url to session manager to connect to your instances
+    Value: !Join [ "", [ "https://console.aws.amazon.com/systems-manager/session-manager/sessions?region=", !Ref "AWS::Region" ] ]
+    Export:
+      Name: !Sub ${EnvironmentName}-SessionManager-Url
