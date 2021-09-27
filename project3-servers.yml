@@ -12,6 +12,14 @@ Parameters:
     Description: Address that can connect to jumpbox
     Type: String
 
+  JumpboxKeypair:
+    Description: Keypair to access jumpbox
+    Type: AWS::EC2::KeyPair::KeyName
+
+  InstancesKeypair:
+    Description: Keypair to access instances (different from jumpbox)
+    Type: AWS::EC2::KeyPair::KeyName
+
 Resources:
 
   Ec2ReadS3Role:
@@ -88,7 +96,7 @@ Resources:
           unzip -o udacity.zip
       IamInstanceProfile: !Ref Ec2ReadS3RoleInstanceProfile
       ImageId: ami-0747bdcabd34c712a
-      KeyName: jumpbox
+      KeyName: !Ref InstancesKeypair
       SecurityGroups:
       - Ref: WebServerSecGroup
       InstanceType: t3.medium
@@ -192,7 +200,7 @@ Resources:
       #ImageId: "ami-087c17d1fe0178315"
       ImageId: ami-0747bdcabd34c712a
       InstanceType: "t3.micro"
-      KeyName: "jumpbox"
+      KeyName: !Ref JumpboxKeypair
       SubnetId: 
         Fn::ImportValue: 
           !Sub "${EnvironmentName}-PUB1-SN"
@@ -217,7 +225,7 @@ Outputs:
 
   JumpboxSSH: 
     Description: ssh to jumpbox
-    Value: !Join [ "", [ "ssh -i jumpbox.pem ubuntu@", !GetAtt Jumpbox.PublicDnsName ] ]
+    Value: !Join [ "", [ "ssh -A ubuntu@", !GetAtt Jumpbox.PublicDnsName ] ]
     Export:
       Name: !Sub ${EnvironmentName}-Jumpbox-SSH   
       
