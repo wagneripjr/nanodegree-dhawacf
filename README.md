@@ -32,3 +32,6 @@ EnvironmentName for project3-servers.yml, should be the same environmentName tha
 with the application URL 
 * SessionManagerUrl 
 with url to connect to your instances via Session Manager
+
+## LoadBalancer URL 
+http://proje-webap-ltf4bumpa6a4-953974627.us-east-1.elb.amazonaws.com/
